@@ -3,7 +3,7 @@
 import dis
 from case_studies.common import sym_utils as su
 
-from case_studies.D_mass.generate_KE import *
+from case_studies.E_blockbeam.generate_KE import *
 su.enable_printing(__name__=="__main__")
 # %%[markdown]
 # The code imported from above shows how we defined q, q_dot, and necessary system parameters.
@@ -11,10 +11,10 @@ su.enable_printing(__name__=="__main__")
 
 # %%
 # defining potential energy
-k = symbols("k")
+# z, theta = symbols("z, theta")
 
 P = (
-    1/2 * k * z **2
+    (m1 * g * (z * sin(theta))) + (m2 * g * ell / 2 * sin(theta))
 )  # this is "mgh", where "h" is a function of generalized coordinate "q"
 
 # can also do the following to get the same answer
@@ -30,9 +30,9 @@ L = simplify(K - P)
 display(Math(vlatex(L)))
 # %%
 # Solution for Euler-Lagrange equations, but this does not include right-hand side (like friction and tau)
-EL_case_studyD = simplify(diff(diff(L, qdot), t) - diff(L, q))
+EL_case_studyE = simplify(diff(diff(L, qdot), t) - diff(L, q))
 
-display(Math(vlatex(EL_case_studyD)))
+display(Math(vlatex(EL_case_studyE)))
 
 
 # %%
@@ -43,25 +43,29 @@ display(Math(vlatex(EL_case_studyD)))
 # these are just convenience variables
 zd = z.diff(t)
 zdd = zd.diff(t)
+thetad = theta.diff(t)
+thetadd = thetad.diff(t)
 
 # defining symbols for external force and friction
 F, b = symbols("F, b")
 
 # defining the right-hand side of the equation and combining it with E-L part
-RHS = Matrix([[F - b * zd]])
-full_eom = EL_case_studyD - RHS
-display(Math(vlatex(full_eom)))
+RHS = Matrix([[- b * zd], 
+              [F * ell * cos(theta)]])
+full_eom = EL_case_studyE - RHS
 
 # finding and assigning zdd and thetadd
 # if our eom were more complicated, we could rearrange, solve for the mass matrix, and invert it to move it to the other side and find qdd and thetadd
-result = simplify(sp.solve(full_eom, (zdd)))
+result = simplify(sp.solve(full_eom, (zdd, thetadd)))
 
 # TODO - add an example of finding the same thing, but not using sp.solve
 
 # result is a Python dictionary, we get to the entries we are interested in
 # by using the name of the variable that we were solving for
-thetadd_eom = result[zdd]  # EOM for thetadd, as a function of states and inputs
+zdd_eom = result[zdd]
+thetadd_eom = result[thetadd]  # EOM for thetadd, as a function of states and inputs
 
+display(Math(vlatex(zdd_eom)))
 display(Math(vlatex(thetadd_eom)))
 
 
@@ -116,19 +120,19 @@ print("x_dot = ", eom(cur_state, cur_input, P.m, P.ell, P.b))
 # this code will only run if this file is executed directly,
 # not if it is imported as a module.
 if __name__ == "__main__":
-    from case_studies import D_mass
+    from case_studies import E_blockbeam
 
     # make sure printing only happens when running this file directly
     su.enable_printing(__name__ == "__main__")
 
-    su.write_eom_to_file(state, ctrl_input, [m, ell, b], D_mass, eom=state_dot)
+    su.write_eom_to_file(state, ctrl_input, [m, ell, b], E_blockbeam, eom=state_dot)
 
     import numpy as np
-    from case_studies.A_arm import eom_generated
+    from case_studies.E_blockbeam import eom_generated
     import importlib
 
     importlib.reload(eom_generated)  # reload in case it was just generated/modified
-    P = D_mass.params
+    P = E_blockbeam.params
 
     param_vals = {
         "m": P.m,

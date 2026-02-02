@@ -3,8 +3,8 @@
 from case_studies.common import sym_utils as su
 
 # local imports (from this folder)
-from generate_KE import *
-
+from case_studies.A_arm.generate_KE import *
+su.enable_printing(__name__=="__main__")
 # %%[markdown]
 # The code imported from above shows how we defined q, q_dot, and necessary system parameters.
 # Then we used position, velocity, and angular velocity to calculate kinetic energy.

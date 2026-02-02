@@ -43,3 +43,5 @@ K = simplify(0.5 * m * v.T @ v + 0.5 * omega.T @ R @ J @ R.T @ omega)
 K = K[0, 0]
 
 display(Math(vlatex(K)))
+
+# %%

@@ -6,20 +6,26 @@ from IPython.display import Math, display
 from sympy import sin, cos, Matrix, symbols, simplify, diff, diag
 
 # defining constants
-t, m_c, m_l, m_r, d, u, g, Jc = symbols("t, m_c, m_l, m_r, d, u, g, Jc")
+t, m_c, m_l, m_r, d, g, J_c = symbols("t, m_c, m_l, m_r, d, g, J_c")
 
 # defining generalized coordinates
-z_v = dynamicsymbols("z_v")
+z = dynamicsymbols("z")
 theta = dynamicsymbols("theta")
 h = dynamicsymbols("h")
 
-# --- POSITION VECTORS ---
-p_center = Matrix([[z_v], 
-                  [h], 
-                  [0]])
+# Defining generalized coords and derivatives
+q = Matrix([[z],[h],[theta]])
+qdot = q.diff(t)
 
-r_left = Matrix([[-d], [0], [0]])
-r_right = Matrix([[d], [0], [0]])
+p_l = Matrix([[z - d * cos(theta)], [h - d * sin(theta)], [0]])
+p_r = Matrix([[z + d * cos(theta)], [h + d * sin(theta)], [0]])
+p_c = Matrix([[z], [h], [0]])
+
+v_l = p_l.diff(t)
+v_r = p_r.diff(t)
+v_c = p_c.diff(t)
+
+omega = Matrix([[0], [0], [theta.diff(t)]])
 
 # --- 2. ROTATION MATRIX & TRANSFORMATIONS ---
 # We define R here, after setting up the basics
@@ -27,33 +33,17 @@ R = Matrix([[cos(theta), -sin(theta), 0],
             [sin(theta),  cos(theta), 0], 
             [0,           0,          1]])
 
-# Now calculate absolute positions of motors
-# Position = Center + (Rotation @ Body_Offset)
-p_left  = p_center + (R @ r_left)
-p_right = p_center + (R @ r_right)
 
-# --- VELOCITIES ---
-v_center = diff(p_center, t)
-v_left = diff(p_left, t)
-v_right = diff(p_right, t)
+J = diag(0, 0, J_c)
 
-# --- ROTATIONAL ---
-omega = Matrix([[0], [0], [theta.diff(t)]])
+K = simplify(
+    0.5 * m_l * v_l.T @ v_l
+    + 0.5 * m_r * v_r.T @ v_r
+    + 0.5 * m_c * v_c.T @ v_c
+    + 0.5 * omega.T @ R @ J @ R.T @ omega
+)
 
-# Inertia
-J_center_mat = diag(0, 0, Jc)
-J_left = 0
-J_right = 0
-
-
-# --- KINETIC ENERGY CALCULATION ---
-KE_center = 0.5 * m_c * (v_center.T @ v_center)
-KE_rot_center = 0.5 * (omega.T @ R @ J_center_mat @ R.T @ omega)
-KE_left = 0.5 * m_l * (v_left.T @ v_left)
-KE_right = 0.5 * m_r * (v_right.T @ v_right)
-
-K = simplify(KE_center + KE_left + KE_right + KE_rot_center)
-K = K[0, 0]
+K = K[0, 0].expand().simplify()
 
 display(Math(vlatex(K)))
 # %%

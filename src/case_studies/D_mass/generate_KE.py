@@ -1,6 +1,3 @@
-# %%
-import sys
-!{sys.executable} -m pip install sympy
 
 #%%
 import sympy as sp

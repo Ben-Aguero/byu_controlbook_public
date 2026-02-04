@@ -58,7 +58,7 @@ u_F, u_tau, mu = symbols("u_F, u_tau, mu")
 # defining the right-hand side of the equation and combining it with E-L part
 RHS = Matrix([[-u_F * sin(theta) - mu * zd],
               [u_F * cos(theta)],
-              [u_tau]
+              [u_tau] 
               ])
 full_eom = EL_case_studyF - RHS
 

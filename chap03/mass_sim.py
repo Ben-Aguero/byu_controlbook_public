@@ -10,7 +10,7 @@ mass = D_mass.Dynamics()
 force = common.SignalGenerator(amplitude=10, frequency=1)
 
 # initialize data storage
-x_hist = [mass.state]
+x_hist = [mass.state.copy()]
 u_hist = []
 
 # loop over time

@@ -12,16 +12,16 @@ class MassDynamics(DynamicsBase):
         super().__init__(
             # Initial state conditions
             state0=np.array([P.z0, P.zdot0]),
-            u_max=P.z_max,
-            u_min=-P.z_max,
+            u_max=P.force_max,
+            u_min=-P.force_max,
             # Time step for integration
             dt=P.ts,
         )
         # see params.py/textbook for details on these parameters
-        self.m = P.m
+        self.m = self.randomize_parameter(P.m, alpha)
         # self.z = self.randomize_parameter(P.z, alpha)
-        self.b = P.b
-        self.k = P.k  # gravity constant is well known, so not randomized
+        self.b = self.randomize_parameter(P.b, alpha)
+        self.k = self.randomize_parameter(P.k, alpha)  # gravity constant is well known, so not randomized
 
     def f(self, x, u):
        return eom_generated.calculate_eom(x, u, self.m, self.k, self.b)
@@ -29,6 +29,5 @@ class MassDynamics(DynamicsBase):
     def h(self):
         # return the output equations
         # could also use input u if needed
-        z = self.state[0]
-        y = np.array([z])
+        y = self.state[:1]
         return y

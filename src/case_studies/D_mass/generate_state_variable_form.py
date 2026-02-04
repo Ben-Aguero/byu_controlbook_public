@@ -11,7 +11,7 @@ su.enable_printing(__name__=="__main__")
 
 # %%
 # defining potential energy
-k = symbols("k")
+k, m = symbols("k, m")
 
 P = (
     1/2 * k * z **2
@@ -60,9 +60,9 @@ result = simplify(sp.solve(full_eom, (zdd)))
 
 # result is a Python dictionary, we get to the entries we are interested in
 # by using the name of the variable that we were solving for
-thetadd_eom = result[zdd]  # EOM for thetadd, as a function of states and inputs
+zdd_eom = result[zdd]  # EOM for thetadd, as a function of states and inputs
 
-display(Math(vlatex(thetadd_eom)))
+display(Math(vlatex(zdd_eom)))
 
 
 # %% [markdown]
@@ -78,21 +78,23 @@ import numpy as np
 
 # but in this example, I want to keep the masses, length, and damping as variables so
 # that I can simulate uncertainty in those parameters in real life.
-params = [(g, P.g)]
+params = [(k, P.k),
+          (m, P.m),
+          (b, P.b)]
 
 
 # substituting parameters into the equations of motion
-thetadd_eom = thetadd_eom.subs(params)
+zdd_eom = zdd_eom.subs(params)
 
 # now defining the state variables that will be passed into f(x,u)
 # state = np.array([theta, thetad])
 # ctrl_input = np.array([tau])
 
-state = sp.Matrix([theta, thetad])
-ctrl_input = sp.Matrix([tau])
+state = sp.Matrix([z, zd])
+ctrl_input = sp.Matrix([F])
 
 # defining the function that will be called to get the derivatives of the states
-state_dot = sp.Matrix([thetad, thetadd_eom])
+state_dot = sp.Matrix([zd, zdd_eom])
 
 
 # %%
@@ -100,12 +102,12 @@ import numpy as np
 
 # converting the function to a callable function that uses numpy to evaluate and
 # return a list of state derivatives
-eom = sp.lambdify([state, ctrl_input, m, ell, b], state_dot, "numpy")
+eom = sp.lambdify([state, ctrl_input, m, k, b], state_dot, "numpy")
 
 # calling the function as a test to see if it works:
 cur_state = np.array([0, 0])
 cur_input = np.array([1])
-print("x_dot = ", eom(cur_state, cur_input, P.m, P.ell, P.b))
+print("x_dot = ", eom(cur_state, cur_input, P.m, P.k, P.b))
 
 
 # %% [markdown]
@@ -121,10 +123,10 @@ if __name__ == "__main__":
     # make sure printing only happens when running this file directly
     su.enable_printing(__name__ == "__main__")
 
-    su.write_eom_to_file(state, ctrl_input, [m, ell, b], D_mass, eom=state_dot)
+    su.write_eom_to_file(state, ctrl_input, [m, k, b], D_mass, eom=state_dot)
 
     import numpy as np
-    from case_studies.A_arm import eom_generated
+    from case_studies.D_mass import eom_generated
     import importlib
 
     importlib.reload(eom_generated)  # reload in case it was just generated/modified
@@ -132,7 +134,7 @@ if __name__ == "__main__":
 
     param_vals = {
         "m": P.m,
-        "ell": P.ell,
+        "k": P.k,
         "b": P.b,
     }
 

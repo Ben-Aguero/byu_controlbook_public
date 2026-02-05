@@ -5,6 +5,7 @@ import numpy as np
 m1 = 0.35 # mass of block (kg)
 m2 = 2.0 # mass of beam (kg)
 ell = 0.5 # length of beam (m)
+length = 0.5
 g = 9.8 # gravity (m/s^2)
 ##### Chapter 3
 # Initial conditions

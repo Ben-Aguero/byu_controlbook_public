@@ -4,8 +4,8 @@
 import numpy as np
 
 
-def calculate_eom(x, u, m1, m2, ell, g):
-    [z, Dummy_61, _Dummy_60, _Dummy_59] = x.flatten()  # ensure 1D
+def calculate_eom(x, u, m1, m2, ell):
+    [z, Dummy_60, _Dummy_59, _Dummy_58] = x.flatten()  # ensure 1D
     [F] = u.flatten()  # ensure 1D
-    eom = np.array([[Dummy_61], [_Dummy_59**2*z + 2.85714285714286*Dummy_61 - 9.8*np.sin(_Dummy_60)], [_Dummy_59], [-4.2*_Dummy_59*Dummy_61*z/(2.1*z**2 + 1.0) + 3.0*F*np.cos(_Dummy_60)/(2.1*z**2 + 1.0) - 20.58*z*np.cos(_Dummy_60)/(2.1*z**2 + 1.0) - 29.4*np.cos(_Dummy_60)/(2.1*z**2 + 1.0)]])
+    eom = np.array([[Dummy_60], [_Dummy_58**2*z - 9.8*np.sin(_Dummy_59)], [_Dummy_58], [-12.0*_Dummy_58*Dummy_60*m1*z/(2.0*ell**2*m2 + 6.0*m1*z**2) + 6.0*F*ell*np.cos(_Dummy_59)/(2.0*ell**2*m2 + 6.0*m1*z**2) - 29.4*ell*m2*np.cos(_Dummy_59)/(2.0*ell**2*m2 + 6.0*m1*z**2) - 58.8*m1*z*np.cos(_Dummy_59)/(2.0*ell**2*m2 + 6.0*m1*z**2)]])
     return eom.squeeze()

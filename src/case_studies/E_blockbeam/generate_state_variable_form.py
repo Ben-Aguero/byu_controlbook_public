@@ -47,11 +47,11 @@ thetad = theta.diff(t)
 thetadd = thetad.diff(t)
 
 # defining symbols for external force and friction
-F = symbols("F")
-
+b, F = symbols("b, F")
+tau = sp.Matrix([[0], [F*ell*cos(theta)]])
+friction = sp.Matrix([[0], [0]])
 # defining the right-hand side of the equation and combining it with E-L part
-RHS = Matrix([[zd], 
-              [F * ell * cos(theta)]])
+RHS = tau + friction
 full_eom = EL_case_studyE - RHS
 
 # finding and assigning zdd and thetadd
@@ -82,10 +82,7 @@ import numpy as np
 
 # but in this example, I want to keep the masses, length, and damping as variables so
 # that I can simulate uncertainty in those parameters in real life.
-params = [(g, P.g),
-          (m1, P.m1),
-          (m2, P.m2),
-          (ell, P.ell)]
+params = [(g, P.g)]
 
 
 # substituting parameters into the equations of motion
@@ -108,12 +105,12 @@ import numpy as np
 
 # converting the function to a callable function that uses numpy to evaluate and
 # return a list of state derivatives
-eom = sp.lambdify([state, ctrl_input, m1, m2, ell, g], state_dot, "numpy")
+eom = sp.lambdify([state, ctrl_input, m1, m2, ell], state_dot, "numpy")
 
 # calling the function as a test to see if it works:
 cur_state = np.array([0, 0, 0, 0])
 cur_input = np.array([1])
-print("x_dot = ", eom(cur_state, cur_input, P.m1, P.m2, P.ell, P.g))
+print("x_dot = ", eom(cur_state, cur_input, P.m1, P.m2, P.ell))
 
 
 # %% [markdown]
@@ -129,7 +126,7 @@ if __name__ == "__main__":
     # make sure printing only happens when running this file directly
     su.enable_printing(__name__ == "__main__")
 
-    su.write_eom_to_file(state, ctrl_input, [m1, m2, ell, g], E_blockbeam, eom=state_dot)
+    su.write_eom_to_file(state, ctrl_input, [m1, m2, ell], E_blockbeam, eom=state_dot)
 
     import numpy as np
     from case_studies.E_blockbeam import eom_generated
@@ -141,11 +138,10 @@ if __name__ == "__main__":
     param_vals = {
         "m1": P.m1,
         "m2": P.m2,
-        "ell": P.ell,
-        "g": P.g,
+        "ell": P.ell
     }
 
-    x_test = np.array([0.0, 0.0, 0.0, 0.0])
+    x_test = np.array([0.25, 0.0, 0.0, 0.0])
     u_test = np.array([1.0])
 
     x_dot_test = eom_generated.calculate_eom(x_test, u_test, **param_vals)

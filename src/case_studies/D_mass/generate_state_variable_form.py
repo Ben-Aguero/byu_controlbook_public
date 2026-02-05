@@ -64,6 +64,36 @@ zdd_eom = result[zdd]  # EOM for thetadd, as a function of states and inputs
 
 display(Math(vlatex(zdd_eom)))
 
+#%%
+# D4
+
+# state = [z, zd], so state_dot = [zd, zdd]
+f_sym = sp.Matrix([zd, zdd_eom])
+state_sym = sp.Matrix([z, zd])
+input_sym = sp.Matrix([F])
+
+# We look for points where the state derivatives are zero (f_sym = 0).
+# This gives us the relationship between position and Force at steady state.
+equilibria = sp.solve(f_sym, state_sym)
+# The output will be a dictionary or list showing z = F/k and zd = 0
+display(Math(vlatex(equilibria)))
+
+
+# A = df/dx, B = df/du
+A_sym = f_sym.jacobian(state_sym)
+B_sym = f_sym.jacobian(input_sym)
+
+display(Math(vlatex(A_sym)))
+
+display(Math(vlatex(B_sym)))
+
+
+v = sp.symbols('v')
+desired_dynamics = sp.Eq(zdd_eom, v)
+fl_control_law = sp.solve(desired_dynamics, F)[0]
+
+display(Math("F_{fl} = " + vlatex(fl_control_law)))
+
 
 # %% [markdown]
 # OK, now we can get the state variable form of the equations of motion.
@@ -144,3 +174,5 @@ if __name__ == "__main__":
     x_dot_test = eom_generated.calculate_eom(x_test, u_test, **param_vals)
     print("\nx_dot_test from generated function = ", x_dot_test)
     # should match what was printed earlier when we called eom directly
+
+# %%

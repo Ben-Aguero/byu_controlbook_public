@@ -95,6 +95,7 @@ fl_control_law = sp.solve(desired_dynamics, F)[0]
 display(Math("F_{fl} = " + vlatex(fl_control_law)))
 
 
+
 # %% [markdown]
 # OK, now we can get the state variable form of the equations of motion.
 

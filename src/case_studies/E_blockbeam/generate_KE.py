@@ -19,8 +19,8 @@ qdot = q.diff(t)
 p1 = Matrix([[z * cos(theta)], [z * sin(theta)], [0]])
 p2 = Matrix([[ell/2*cos(theta)],[ell/2*sin(theta)],[0]])
 
-v1 = diff(p1, t)   # Velocity of Beam COM
-v2 = diff(p2, t) # Velocity of Block
+v1 = p1.diff(t)   # Velocity of Beam COM
+v2 = p2.diff(t) # Velocity of Block
 
 # by inspection, we can find the angular velocity of the beam
 omega = Matrix([[0], [0], [theta.diff(t)]])
@@ -30,7 +30,7 @@ R = Matrix([[cos(theta), -sin(theta), 0],
             [0,           0,          1]])
 
 # Next we define the intertia tensor for the beam, modeled as a thin rod
-J = diag(0, m2 * ell**2 / 12.0, m2 * ell**2 / 12)
+J = diag(0, m2 * ell**2 / 12.0, m2 * ell**2 / 12.0)
 
 # Calculate the kinetic energy and display it
 K = simplify(

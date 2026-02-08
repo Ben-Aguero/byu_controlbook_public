@@ -2,6 +2,7 @@
 # local (controlbook)
 import dis
 from case_studies.common import sym_utils as su
+import case_studies.E_blockbeam.params as PAR
 
 from case_studies.E_blockbeam.generate_KE import *
 su.enable_printing(__name__=="__main__")
@@ -56,7 +57,7 @@ full_eom = EL_case_studyE - RHS
 
 # finding and assigning zdd and thetadd
 # if our eom were more complicated, we could rearrange, solve for the mass matrix, and invert it to move it to the other side and find qdd and thetadd
-result = simplify(sp.solve(full_eom, (zdd, thetadd)))
+result = sp.solve(full_eom, (zdd, thetadd))
 
 # TODO - add an example of finding the same thing, but not using sp.solve
 
@@ -68,12 +69,73 @@ thetadd_eom = result[thetadd]  # EOM for thetadd, as a function of states and in
 display(Math(vlatex(zdd_eom)))
 display(Math(vlatex(thetadd_eom)))
 
+#%%
+# E4
+
+f_sym = sp.Matrix([zd, thetad, zdd_eom, thetadd_eom])
+state_sym = sp.Matrix([z, theta, zd, thetad])
+input_sym = sp.Matrix([F])
+
+equilibria = equilibria = sp.solve([zdd_eom.subs({zd:0, thetad:0}), 
+                       thetadd_eom.subs({zd:0, thetad:0})], (z, theta, F))
+
+display(Math(vlatex(equilibria)))
+
+
+A_sym = f_sym.jacobian(state_sym)
+B_sym = f_sym.jacobian(input_sym)
+
+display(Math(vlatex(A_sym)))
+display(Math(vlatex(B_sym)))
+
+v = sp.symbols('v')
+desired_dynamics = sp.Eq(thetadd_eom, v)
+
+fl_control_law = sp.solve(desired_dynamics, F)[0]
+
+fl_control_law = simplify(fl_control_law)
+
+display(Math(r"F_{fl} = " + vlatex(fl_control_law)))
+
+C_sym = sp.Matrix([
+    [1, 0, 0, 0],
+    [0, 1, 0, 0]
+])
+
+D_sym = sp.Matrix([
+    [0],
+    [0]
+])
+
+op_point = {z: 0, theta: 0, zd: 0, thetad: 0, F: 0}
+
+A_lin = A_sym.subs(op_point)
+B_lin = B_sym.subs(op_point)
+
+params_subs = {
+    m1: PAR.m1,
+    m2: PAR.m2, 
+    ell: PAR.ell,
+    g: PAR.g,
+    b: b
+}
+
+A_num = A_lin.subs(params_subs)
+B_num = B_lin.subs(params_subs)
+
+C_num = C_sym
+D_num = D_sym
+
+display(Math("A_{num} = " + vlatex(A_num)))
+display(Math("B_{num} = " + vlatex(B_num)))
+display(Math("C_{num} = " + vlatex(C_num)))
+display(Math("D_{num} = " + vlatex(D_num)))
 
 # %% [markdown]
 # OK, now we can get the state variable form of the equations of motion.
 
 # %%
-import params as P
+
 import numpy as np
 
 # defining fixed parameters that are not states or inputs (like g, ell, m, b)
@@ -82,7 +144,7 @@ import numpy as np
 
 # but in this example, I want to keep the masses, length, and damping as variables so
 # that I can simulate uncertainty in those parameters in real life.
-params = [(g, P.g)]
+params = [(g, PAR.g)]
 
 
 # substituting parameters into the equations of motion
@@ -93,11 +155,11 @@ thetadd_eom = thetadd_eom.subs(params)
 # state = np.array([theta, thetad])
 # ctrl_input = np.array([tau])
 
-state = sp.Matrix([z, zd, theta, thetad])
+state = sp.Matrix([z, theta, zd, thetad])
 ctrl_input = sp.Matrix([F])
 
 # defining the function that will be called to get the derivatives of the states
-state_dot = sp.Matrix([zd, zdd_eom, thetad, thetadd_eom])
+state_dot = sp.Matrix([zd, thetad, zdd_eom, thetadd_eom])
 
 
 # %%
@@ -110,7 +172,7 @@ eom = sp.lambdify([state, ctrl_input, m1, m2, ell], state_dot, "numpy")
 # calling the function as a test to see if it works:
 cur_state = np.array([0, 0, 0, 0])
 cur_input = np.array([1])
-print("x_dot = ", eom(cur_state, cur_input, P.m1, P.m2, P.ell))
+print("x_dot = ", eom(cur_state, cur_input, PAR.m1, PAR.m2, PAR.ell))
 
 
 # %% [markdown]
@@ -136,9 +198,9 @@ if __name__ == "__main__":
     P = E_blockbeam.params
 
     param_vals = {
-        "m1": P.m1,
-        "m2": P.m2,
-        "ell": P.ell
+        "m1": PAR.m1,
+        "m2": PAR.m2,
+        "ell": PAR.ell
     }
 
     x_test = np.array([0.25, 0.0, 0.0, 0.0])
@@ -147,3 +209,5 @@ if __name__ == "__main__":
     x_dot_test = eom_generated.calculate_eom(x_test, u_test, **param_vals)
     print("\nx_dot_test from generated function = ", x_dot_test)
     # should match what was printed earlier when we called eom directly
+
+# %%

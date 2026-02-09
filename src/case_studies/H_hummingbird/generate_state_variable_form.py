@@ -26,7 +26,7 @@ su.enable_printing(__name__ == "__main__")
 # %%
 # TODO calculate the kinetic energy using the definition with the mass matrix "M"
 # and "qdot"
-# K =
+K = half * qdot.T @ M @ qdot
 
 # then make sure to grab just the scalar part of the result
 K = K[0, 0]
@@ -35,12 +35,16 @@ K = K[0, 0]
 # TODO: define symbols needed for potential energy and the RHS 
 # (e.g. friction, force_left, force_right, etc.) of the equations 
 # of motion.
-
+m1, m2, m3, g, ell_1, ell_2, ell_3z, h1, h2, h3, P0, f_l, f_r = symbols("m1, m2, m3, g, ell_1, ell_2, ell_3z, h1, h2, h3, P0, f_l, f_r")
 
 # TODO now calculate the potential energy "P"
-# P = 
+P = ((m1 * g * ell_1 * sin(theta)) +
+     (m2 * g * ell_2 * sin(theta)) +
+     (m3 * g * ell_3z) + P0)
 
 su.printeq("P", P)
+
+L = simplify(K - P)
 
 
 
@@ -49,7 +53,8 @@ su.printeq("P", P)
 # ### Generalized Forces (tau):
 # %%
 # TODO: now calculate and define tau
-# tau = sp.Matrix([])
+tau = sp.Matrix([[d * (f_l - f_r)], [ell_t * (f_l + f_r) * cos(phi)], 
+                 [(ell_t * (f_l + f_r) * cos(theta) * sin(phi)) - (d * (f_l - f_r) * sin(theta))]])
 
 
 # Group terms together for readability (this is to help with checking the result
@@ -66,7 +71,12 @@ su.printeq("tau", tau)
 # terms of Mdot, dM/dphi, dM/dtheta, and dM/dpsi.
 # %%
 # TODO: calculate Mdot and verify with lab manual
-# Mdot = 
+thetadot = theta.diff(t)
+phidot = phi.diff(t)
+Mdot22 = 2 * (J1z - J1y) * sin(phi) * cos(phi) * phidot
+Mdot23 = (J1y - J1z) * (-2 * sin(phi)**2 * cos(theta) * phidot - sin(phi) * sin(theta) * cos(phi) * thetadot + cos(theta) * phidot)
+Mdot33 = -2 * ((-J1y+J1z) * sin(phi) * cos(phi) * cos(theta) * phidot * (-J1x + J1y * sin(phi)**2 + J1z * cos(phi)**2 - J2x + J2z + ell_1**2 * m1 + ell_2**2 * m2) * thetadot * sin(theta)) * cos(theta)
+Mdot = sp.Matrix([[0, 0, -J1x* cos(theta) * thetadot], [0, Mdot22, Mdot23], [-J1x * cos(theta) * thetadot, Mdot23, Mdot33]])
 
 
 #%%[markdown]
@@ -120,13 +130,13 @@ Mdot[2, 2] = Mdot33  # replace with simplified version
 
 # %%
 
-#dM_dphi = 
-#dM_dphi = sp.simplify(dM_dphi)
+dM_dphi = sp.Matrix([[0, 0, 0], [0, (J1z - J1y) * sin(2 * phi), (J1y - J1z) * cos(2*phi) * cos(theta)], [0, (J1y-J1z)*cos(2*phi)*cos(theta), 2*(J1y-J1z)*sin(phi)*cos(phi)*(cos(theta)**2)]])
+dM_dphi = sp.simplify(dM_dphi)
 
 su.printeq("dM/dϕ", dM_dphi)
 
 # %%
-# dM_dtheta =
+dM_dtheta = sp.Matrix([[0, 0, -J1x*cos(theta)], [0, 0, -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta)], [-J1x*cos(theta), -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta), 2*(J1x-J1y*sin(phi)**2 - J1z*cos(phi)**2 + J2x - J2z - (ell_1**2) * m1 - (ell_2**2)*m2)*sin(theta)*cos(theta)]])
 
 # substitute N33 just for printing to match the lab manual
 N33 = dM_dtheta[2, 2]
@@ -142,7 +152,7 @@ dM_dtheta = sp.Matrix(dM_dtheta)
 dM_dtheta[2, 2] = N33
 
 # %%
-# dM_dpsi =
+dM_dpsi = sp.zeros(3, 3)
 
 su.printeq("dM/dψ", dM_dpsi)
 
@@ -152,16 +162,16 @@ su.printeq("dM/dψ", dM_dpsi)
 # %%
 # TODO: calculate C
 # intermediate terms may be helpful, but calculate C -> 
-# C = 
+C = dM_dphi + dM_dtheta + dM_dpsi
 
 
 # can print C directly, but it is very long
-# su.printeq("C", C)
+su.printeq("C", C)
 
 # %% [markdown]
 # ### Partial Derivative of Potential Energy (dP/dq):
 # %%
-# dP_dq = 
+dP_dq = P.diff(q)
 
 su.printeq("dP/dq", dP_dq)
 
@@ -182,7 +192,7 @@ u = sp.Matrix([f_l, f_r])
 # TODO: you may need to modify this to match the variable names you created above
 sys_params = list(
     [m1, m2, m3, J1x, J1y, J1z, J2x, J2y, J2z, J3x, J3y, J3z]
-    + [ell_1, ell_2, ell_3x, ell_3y, ell_3z, ell_T, d, g]
+    + [ell_1, ell_2, ell_3x, ell_3y, ell_3z, ell_t, d, g]
 )
 
 # Everything below this point will only run if this file is executed directly,
@@ -207,24 +217,24 @@ if __name__ == "__main__":
     P = H_hummingbird.params
 
     param_vals = {
-        "m_1": P.m1,
-        "m_2": P.m2,
-        "m_3": P.m3,
-        "J_1x": P.J1x,
-        "J_1y": P.J1y,
-        "J_1z": P.J1z,
-        "J_2x": P.J2x,
-        "J_2y": P.J2y,
-        "J_2z": P.J2z,
-        "J_3x": P.J3x,
-        "J_3y": P.J3y,
-        "J_3z": P.J3z,
+        "m1": P.m1,
+        "m2": P.m2,
+        "m3": P.m3,
+        "J1x": P.J1x,
+        "J1y": P.J1y,
+        "J1z": P.J1z,
+        "J2x": P.J2x,
+        "J2y": P.J2y,
+        "J2z": P.J2z,
+        "J3x": P.J3x,
+        "J3y": P.J3y,
+        "J3z": P.J3z,
         "ell_1": P.ell1,
         "ell_2": P.ell2,
         "ell_3x": P.ell3x,
         "ell_3y": P.ell3y,
         "ell_3z": P.ell3z,
-        "ell_T": P.ellT,
+        "ell_t": P.ellT,
         "d": P.d,
         "g": P.g,
     }
@@ -251,3 +261,4 @@ if __name__ == "__main__":
 
 
     
+# %%

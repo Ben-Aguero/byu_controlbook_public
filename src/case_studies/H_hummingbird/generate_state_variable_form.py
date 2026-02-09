@@ -53,8 +53,9 @@ L = simplify(K - P)
 # ### Generalized Forces (tau):
 # %%
 # TODO: now calculate and define tau
-tau = sp.Matrix([[d * (f_l - f_r)], [ell_t * (f_l + f_r) * cos(phi)], 
-                 [(ell_t * (f_l + f_r) * cos(theta) * sin(phi)) - (d * (f_l - f_r) * sin(theta))]])
+tau = sp.Matrix([[d * (f_l - f_r)], 
+                 [ell_t * (f_l + f_r) * cos(phi)], 
+                 [(ell_t * (f_l + f_r) * cos(theta) * sin(phi)) - d * (f_l - f_r) * sin(theta)]])
 
 
 # Group terms together for readability (this is to help with checking the result
@@ -71,12 +72,16 @@ su.printeq("tau", tau)
 # terms of Mdot, dM/dphi, dM/dtheta, and dM/dpsi.
 # %%
 # TODO: calculate Mdot and verify with lab manual
-thetadot = theta.diff(t)
-phidot = phi.diff(t)
-Mdot22 = 2 * (J1z - J1y) * sin(phi) * cos(phi) * phidot
-Mdot23 = (J1y - J1z) * (-2 * sin(phi)**2 * cos(theta) * phidot - sin(phi) * sin(theta) * cos(phi) * thetadot + cos(theta) * phidot)
-Mdot33 = -2 * ((-J1y+J1z) * sin(phi) * cos(phi) * cos(theta) * phidot * (-J1x + J1y * sin(phi)**2 + J1z * cos(phi)**2 - J2x + J2z + ell_1**2 * m1 + ell_2**2 * m2) * thetadot * sin(theta)) * cos(theta)
-Mdot = sp.Matrix([[0, 0, -J1x* cos(theta) * thetadot], [0, Mdot22, Mdot23], [-J1x * cos(theta) * thetadot, Mdot23, Mdot33]])
+dM_dphi = M.diff(phi)
+dM_dtheta = M.diff(theta)
+dM_dpsi = sp.zeros(3, 3)
+thetadot = qdot[1]
+phidot = qdot[0]
+psidot = qdot[2]
+# Mdot22 = 2 * (J1z - J1y) * sin(phi) * cos(phi) * phidot
+# Mdot23 = (J1y - J1z) * (-2 * sin(phi)**2 * cos(theta) * phidot - sin(phi) * sin(theta) * cos(phi) * thetadot + cos(theta) * phidot)
+# Mdot33 = -2 * ((-J1y+J1z) * sin(phi) * cos(phi) * cos(theta) * phidot * (-J1x + J1y * sin(phi)**2 + J1z * cos(phi)**2 - J2x + J2z + ell_1**2 * m1 + ell_2**2 * m2) * thetadot * sin(theta)) * cos(theta)
+Mdot = dM_dphi * phidot + dM_dtheta * thetadot + dM_dpsi * psidot
 
 
 #%%[markdown]
@@ -129,15 +134,15 @@ Mdot[2, 2] = Mdot33  # replace with simplified version
 # the lab manual results pretty well, but other versions may look different
 
 # %%
-
-dM_dphi = sp.Matrix([[0, 0, 0], [0, (J1z - J1y) * sin(2 * phi), (J1y - J1z) * cos(2*phi) * cos(theta)], [0, (J1y-J1z)*cos(2*phi)*cos(theta), 2*(J1y-J1z)*sin(phi)*cos(phi)*(cos(theta)**2)]])
-dM_dphi = sp.simplify(dM_dphi)
+dM_dphi = M.diff(phi)
+# dM_dphi = sp.Matrix([[0, 0, 0], [0, (J1z - J1y) * sin(2 * phi), (J1y - J1z) * cos(2*phi) * cos(theta)], [0, (J1y-J1z)*cos(2*phi)*cos(theta), 2*(J1y-J1z)*sin(phi)*cos(phi)*(cos(theta)**2)]])
+# dM_dphi = sp.simplify(dM_dphi)
 
 su.printeq("dM/dϕ", dM_dphi)
 
 # %%
-dM_dtheta = sp.Matrix([[0, 0, -J1x*cos(theta)], [0, 0, -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta)], [-J1x*cos(theta), -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta), 2*(J1x-J1y*sin(phi)**2 - J1z*cos(phi)**2 + J2x - J2z - (ell_1**2) * m1 - (ell_2**2)*m2)*sin(theta)*cos(theta)]])
-
+# dM_dtheta = sp.Matrix([[0, 0, -J1x*cos(theta)], [0, 0, -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta)], [-J1x*cos(theta), -(J1y-J1z)*sin(phi)*cos(phi)*sin(theta), 2*(J1x-J1y*sin(phi)**2 - J1z*cos(phi)**2 + J2x - J2z - (ell_1**2) * m1 - (ell_2**2)*m2)*sin(theta)*cos(theta)]])
+dM_dtheta = M.diff(theta)
 # substitute N33 just for printing to match the lab manual
 N33 = dM_dtheta[2, 2]
 print_subs = {N33: sp.Symbol("N_33")}
@@ -152,8 +157,8 @@ dM_dtheta = sp.Matrix(dM_dtheta)
 dM_dtheta[2, 2] = N33
 
 # %%
-dM_dpsi = sp.zeros(3, 3)
-
+# dM_dpsi = sp.zeros(3, 3)
+dM_dpsi = M.diff(psi)
 su.printeq("dM/dψ", dM_dpsi)
 
 
@@ -162,7 +167,12 @@ su.printeq("dM/dψ", dM_dpsi)
 # %%
 # TODO: calculate C
 # intermediate terms may be helpful, but calculate C -> 
-C = dM_dphi + dM_dtheta + dM_dpsi
+grad_M_term = sp.Matrix([
+    (qdot.T * dM_dphi * qdot)[0],
+    (qdot.T * dM_dtheta * qdot)[0],
+    (qdot.T * dM_dpsi * qdot)[0]
+])
+C = Mdot * qdot - sp.Rational(1, 2) * grad_M_term
 
 
 # can print C directly, but it is very long

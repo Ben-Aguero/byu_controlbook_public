@@ -20,6 +20,14 @@ m3 = 0.1905
 J3x = 0.0002222
 J3y = 0.0001956
 J3z = 0.000027
+phi0 = 0
+phidot0 = 0
+theta0 = 0
+thetadot0 = 0
+psi0 = 0
+psidot0 = 0
+ts = .01
+beta = 0.001
 
 
 ##### Chapter 4

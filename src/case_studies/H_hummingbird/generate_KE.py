@@ -125,8 +125,8 @@ J3 = sp.diag(J3x, J3y, J3z)
 # TODO: calculate M using the masses and the V, W, R, and J matrices
 M = sp.zeros(3, 3)
 M += m1 * (V1.T * V1) + (W1.T * R1 * J1 * R1.T * W1)
-M += m1 * (V2.T * V2) + (W2.T * R2 * J1 * R2.T * W2)
-M += m1 * (V3.T * V3) + (W3.T * R3 * J1 * R3.T * W3)
+M += m2 * (V2.T * V2) + (W2.T * R2 * J2 * R2.T * W2)
+M += m3 * (V3.T * V3) + (W3.T * R3 * J3 * R3.T * W3)
 
 # Simplify
 M = sp.trigsimp(M)  # because there seemed to be many trig terms that could simplify

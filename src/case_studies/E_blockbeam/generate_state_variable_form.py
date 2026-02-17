@@ -1,4 +1,4 @@
-# %%
+# %% imports
 # local (controlbook)
 import dis
 from case_studies.common import sym_utils as su
@@ -10,7 +10,7 @@ su.enable_printing(__name__=="__main__")
 # The code imported from above shows how we defined q, q_dot, and necessary system parameters.
 # Then we used position, velocity, and angular velocity to calculate kinetic energy.
 
-# %%
+# %% Getting P and L
 # defining potential energy
 # z, theta = symbols("z, theta")
 
@@ -29,7 +29,7 @@ P = (
 # documentation.
 L = simplify(K - P)
 display(Math(vlatex(L)))
-# %%
+# %% RHS
 # Solution for Euler-Lagrange equations, but this does not include right-hand side (like friction and tau)
 EL_case_studyE = simplify(diff(diff(L, qdot), t) - diff(L, q))
 
@@ -69,7 +69,7 @@ thetadd_eom = result[thetadd]  # EOM for thetadd, as a function of states and in
 display(Math(vlatex(zdd_eom)))
 display(Math(vlatex(thetadd_eom)))
 
-#%%
+#%% E4
 # E4
 
 f_sym = sp.Matrix([zd, thetad, zdd_eom, thetadd_eom])
@@ -131,10 +131,42 @@ display(Math("B_{num} = " + vlatex(B_num)))
 display(Math("C_{num} = " + vlatex(C_num)))
 display(Math("D_{num} = " + vlatex(D_num)))
 
+#%% E.5
+print("-" * 50)
+print("Homework E.5: Transfer Functions")
+print("-" * 50)
+
+s = sp.symbols('s')
+
+# We use the symbolic linearized matrices (A_lin, B_lin) derived above.
+# These have the equilibrium values (0) substituted, but parameters are still symbols.
+
+# Identity Matrix
+I = sp.eye(A_lin.shape[0])
+
+# Compute Resolvent Matrix Phi = (sI - A)^-1
+# We use .inv() to invert the matrix symbolically
+Phi = (s * I - A_lin).inv()
+
+# Transfer Function Formula: H(s) = C * Phi * B + D
+# Result H_matrix will be a vector with 2 rows:
+# Row 0: Transfer function from F -> Z (Position)
+# Row 1: Transfer function from F -> Theta (Angle)
+H_matrix = C_sym * Phi * B_lin + D_sym
+
+# Simplify to make the output readable
+H_matrix = sp.simplify(H_matrix)
+
+print("Transfer Function H_z(s) = Z(s) / F(s):")
+display(Math(r"H_z(s) = " + vlatex(H_matrix[0])))
+
+print("Transfer Function H_theta(s) = Theta(s) / F(s):")
+display(Math(r"H_\theta(s) = " + vlatex(H_matrix[1])))
+
 # %% [markdown]
 # OK, now we can get the state variable form of the equations of motion.
 
-# %%
+# %% prints out x_dot
 
 import numpy as np
 
@@ -179,7 +211,7 @@ print("x_dot = ", eom(cur_state, cur_input, PAR.m1, PAR.m2, PAR.ell))
 # The next step is to save this function "f" so that we can use it with a numerical integrator, like
 # scipy.integrate.ivp.solve_ivp or the rk4 functions in the case studies. To save this function, we can use the following:
 
-# %%
+# %% generate eom file
 # this code will only run if this file is executed directly,
 # not if it is imported as a module.
 if __name__ == "__main__":

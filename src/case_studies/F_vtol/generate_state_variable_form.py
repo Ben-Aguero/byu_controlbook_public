@@ -1,4 +1,4 @@
-# %%
+# %% imports
 # local (controlbook)
 import dis
 from case_studies.common import sym_utils as su
@@ -9,7 +9,7 @@ su.enable_printing(__name__=="__main__")
 # The code imported from above shows how we defined q, q_dot, and necessary system parameters.
 # Then we used position, velocity, and angular velocity to calculate kinetic energy.
 
-# %%
+# %% define P and find L
 # defining potential energy
 # k = symbols("k")
 
@@ -30,8 +30,7 @@ P = (
 # documentation.
 L = simplify(K - P)
 display(Math(vlatex(L)))
-# %%
-# Solution for Euler-Lagrange equations, but this does not include right-hand side (like friction and tau)
+# %% Solution for Euler-Lagrange equations, but this does not include right-hand side (like friction and tau)
 qd = q.diff(t)
 qdd = qd.diff(t)
 EL_case_studyF = simplify(diff(diff(L, qd), t) - diff(L, q))
@@ -39,7 +38,7 @@ EL_case_studyF = simplify(diff(diff(L, qd), t) - diff(L, q))
 display(Math(vlatex(EL_case_studyF)))
 
 
-# %%
+# %% solving 
 ############################################################
 ### Including friction and generalized forces, then solving for highest order derivatives
 ############################################################
@@ -80,8 +79,7 @@ thetadd_eom = result[thetadd]  # EOM for thetadd, as a function of states and in
 # M = EL_case_studyF.jacobian(qdd)
 # display(Math("M(q) = " + vlatex(simplify(M))))
 
-#%%
-#F.4 and F.6
+#%% F.4 and F.6
 state_sym = sp.Matrix([z, h, theta, zd, hd, thetad])
 input_sym = sp.Matrix([u_F, u_tau])
 
@@ -200,7 +198,7 @@ display(Math("A_{lon} = " + vlatex(A_lon)))
 display(Math("B_{lon} = " + vlatex(B_lon)))
 
 
-# --- Part (b): Lateral System (Position & Orientation) ---
+# Part (b): Lateral System (Position & Orientation)
 # States: x_lat = [z, theta, z_dot, theta_dot]
 # Input: u_lat = u_tau
 print("\n--- Part (b): Lateral State Space (z, theta, z_dot, theta_dot) ---")
@@ -234,6 +232,53 @@ B_lat = sp.Matrix([
 
 display(Math("A_{lat} = " + vlatex(A_lat)))
 display(Math("B_{lat} = " + vlatex(B_lat)))
+
+# %% F.5
+print("-" * 50)
+print("Homework F.5: Transfer Functions")
+print("-" * 50)
+
+s = sp.symbols('s')
+
+# --- Part (a): Longitudinal (h) ---
+# H_h(s) = h(s) / u_F(s)
+# Using A_lon, B_lon derived above
+I_lon = sp.eye(A_lon.shape[0])
+Phi_lon = (s * I_lon - A_lon).inv()
+
+# Output is h (index 0 of longitudinal state [h, h_dot])
+C_lon = sp.Matrix([[1, 0]]) 
+
+H_h = C_lon * Phi_lon * B_lon
+H_h = sp.simplify(H_h)[0] # Extract scalar
+
+print("\n(Longitudinal) Transfer Function H_h(s) = h(s) / F(s):")
+display(Math(r"H_h(s) = " + vlatex(H_h)))
+
+
+# --- Part (b): Lateral (theta, z) ---
+# Using A_lat, B_lat derived above
+# State x_lat = [z, theta, z_dot, theta_dot]
+I_lat = sp.eye(A_lat.shape[0])
+Phi_lat = (s * I_lat - A_lat).inv()
+
+# We want two transfer functions from Input u_tau:
+# 1. To Theta (index 1)
+# 2. To Z (index 0)
+
+C_lat = sp.Matrix([
+    [1, 0, 0, 0], # Select z
+    [0, 1, 0, 0]  # Select theta
+])
+
+H_lat = C_lat * Phi_lat * B_lat
+H_lat = sp.simplify(H_lat)
+
+print("\n(Lateral) Transfer Function H_z(s) = z(s) / tau(s):")
+display(Math(r"H_z(s) = " + vlatex(H_lat[0])))
+
+print("\n(Lateral) Transfer Function H_theta(s) = theta(s) / tau(s):")
+display(Math(r"H_\theta(s) = " + vlatex(H_lat[1])))
 
 
 # %% [markdown]

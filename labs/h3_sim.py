@@ -41,7 +41,6 @@ x_hist = np.array(x_hist)
 u_hist = np.array(u_hist)
 
 # visualize
-# Note: Ensure hummingbirdAnimation.py is accessible as H_hummingbird.Visualizer 
 # or import it directly if your package structure differs.
 viz = H_hummingbird.Visualizer(time, x_hist, u_hist)
 viz.animate()  # could also just call viz.plot()

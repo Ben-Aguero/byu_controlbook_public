@@ -148,8 +148,10 @@ class HummingbirdDynamics(DynamicsBase):
         pwm = np.clip(pwm, 0.0, 1.0)
 
         # convert pwm to motor forces [f_l, f_r]
-        u = pwm * self.km
+        f_l = self.km * pwm[0]
+        f_r = self.km * pwm[1]
 
         # call update from parent class (DynamicsBase)
-        y = super().update(u)
-        return y
+        u_forces = np.array([f_l, f_r])
+        super().update(u_forces)
+        return self.h()

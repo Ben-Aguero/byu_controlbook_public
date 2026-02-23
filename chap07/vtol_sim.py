@@ -1,3 +1,5 @@
+import numpy as np
+
 # local (controlbook)
 from case_studies import common, F_vtol
 

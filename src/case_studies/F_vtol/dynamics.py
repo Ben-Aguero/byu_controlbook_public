@@ -7,7 +7,7 @@ from . import params as P
 from ..common.dynamics_base import DynamicsBase
 
 
-class VtolDynamics(DynamicsBase):
+class VTOLDynamics(DynamicsBase):
     def __init__(self, alpha=0.0, F_wind = 0.0):
         super().__init__(
             # Initial state conditions

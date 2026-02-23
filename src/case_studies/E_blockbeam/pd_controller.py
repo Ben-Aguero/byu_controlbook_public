@@ -1,84 +1,62 @@
-# 3rd-party
 import numpy as np
 
 # local (controlbook)
-from case_studies import common
-import case_studies.E_blockbeam.params as P
-
+from . import params as P
+from .. import common
+from ..control.pd import PD
+from ..control import utils_design
 
 class BlockbeamControllerPD(common.ControllerBase):
-    def __init__(self, use_feedback_linearization: bool = True):
+    def __init__(self):
         # tuning parameters
-        # tr_theta = 0.25  # from part (b)
-        zeta_theta = 0.95
-        M = 10  # time separation factor between inner and outer loop
-        
-        # Toggle tr_z for part (d) vs part (f)
-        # tr_z = tr_theta * M  # part (d) standard
-        tr_z = 0.98           # part (f) tuned to saturate for a 0.25m step
-        tr_theta = tr_z / M
-        
-        zeta_z = 0.95
+        tr_theta = 1.0 # just bad all around
+        tr_theta = 0.3 # better starting point, maybe even 0.4
+        tr_theta = 0.18 # tuned to barely saturate for a single step
+        zeta_theta = 0.707
+        M = 10 # time separation factor between inner and outer loop
+        tr_z = tr_theta * M
+        zeta_z = 0.707
 
         # system parameters
-        m1 = P.m1
-        m2 = P.m2
-        ell = P.length
-        g = P.g
+        a0_inner = P.tf_inner_den[-1]
+        b0_inner = P.tf_inner_num[-1]
+        b0_outer = P.tf_outer_num[-1]
 
-        # plant gains (derived from E.8 transfer functions)
-        # P_inner(s) = b_in / s^2
-        # P_outer(s) = b_out / s^2
-        b_in = 6.0 / (ell * (1.5 * m1 + 2.0 * m2))
-        b_out = -g
-
-        # Inner loop (theta)
-        wn_theta = 2.2 / tr_theta
-        self.kp_theta = wn_theta**2 / b_in
-        self.kd_theta = (2 * zeta_theta * wn_theta) / b_in
-        print(f"Inner loop (theta): {self.kp_theta = :.3f}, {self.kd_theta = :.3f}")
+        # Inner loop
+        wn_theta = utils_design.get_natural_frequency(tr_theta, zeta_theta)
+        kp_theta = wn_theta**2 / b0_inner
+        kd_theta = 2 * zeta_theta * wn_theta / b0_inner
+        # kp_theta, kd_theta = utils_design.get_pd_gains_from_des_CE(
+        # wn_theta, zeta_theta, inner_b0
+        # )
+        self.theta_pd = PD(kp_theta, kd_theta)
+        print(f"Inner loop (theta): {kp_theta = :.3f}, {kd_theta = :.3f}")
 
         # DC gain of inner loop
-        # Since we use a PD controller on a 1/s^2 plant, DC gain is exactly 1
-        DC_gain = 1.0
-        print(f"{DC_gain = :.3f}")
+        DC_gain = (b0_inner * kp_theta) / (a0_inner + b0_inner * kp_theta)
+        print(f"{DC_gain = }") # a0 is 0, so DC_gain is 1
 
-        # Outer loop (z)
-        wn_z = 2.2 / tr_z
-        self.kp_z = wn_z**2 / b_out
-        self.kd_z = (2 * zeta_z * wn_z) / b_out
-        print(f"Outer loop (z): {self.kp_z = :.3f}, {self.kd_z = :.3f}")
+        # Outer loop
+        effective_b0_outer = b0_outer * DC_gain
+        wn_z = utils_design.get_natural_frequency(tr_z, zeta_z)
+        kp_z = wn_z**2 / effective_b0_outer
+        kd_z = 2 * zeta_z * wn_z / effective_b0_outer
+        self.z_pd = PD(kp_z, kd_z)
 
-        self.F_max = 15.0  # From part (f)
-        self.use_feedback_linearization = use_feedback_linearization
+        print(f"Outer loop (z): {kp_z = :.3f}, {kd_z = :.3f}")
 
     def update_with_state(self, r, x):
         z_ref = r[0]
         z, theta, zdot, thetadot = x
 
         # outer loop control
-        error_z = z_ref - z
-        theta_ref = self.kp_z * error_z - self.kd_z * zdot
-        
-        # Optional: store theta_ref if your visualizer expects it in the reference array
-        if len(r) > 1:
-            r[1] = theta_ref  
+        theta_ref = self.z_pd.update_modified(z_ref, z, zdot)
+        r[1] = theta_ref # if you want to visualize the "reference" angle
 
         # inner loop control
-        error_theta = theta_ref - theta
-        F_tilde = self.kp_theta * error_theta - self.kd_theta * thetadot
-
-        # feedback linearization (equilibrium force)
-        if self.use_feedback_linearization:
-            # Balances the block's mass dynamically at position z, plus the beam's mass
-            F_fl = (P.m1 * P.g * z) / P.length + (P.m2 * P.g) / 2.0
-            F_unsat = F_tilde + F_fl
-        else: 
-            # use nominal equilibrium force
-            F_unsat = F_tilde + P.u_eq
-
-        # saturation
-        u_unsat = np.array([F_unsat])
-        u = self.saturate(u_unsat, u_max=np.array([self.F_max]))
+        F_tilde = self.theta_pd.update_modified(theta_ref, theta, thetadot)
+        F_fl = P.m1 * P.g * (z / P.length) + P.m2 * P.g / 2.0
+        u_unsat = np.array([F_tilde + F_fl])
+        u = self.saturate(u_unsat, u_max=P.force_max)
         
         return u

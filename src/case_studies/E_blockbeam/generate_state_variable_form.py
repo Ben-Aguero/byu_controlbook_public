@@ -18,22 +18,15 @@ P = (
     (m1 * g * (z * sin(theta))) + (m2 * g * ell / 2 * sin(theta))
 )  # this is "mgh", where "h" is a function of generalized coordinate "q"
 
-# can also do the following to get the same answer
-#   g_vec = Matrix([[0], [g], [0]])  # defining gravity in the direction that increases potential energy
-#   p1 = Matrix([[ell/2*cos(theta)], [ell/2*sin(theta)], [0]])
-#   P = m*g_vec.T@p1
-#   P = P[0,0]
-
-# calculate the lagrangian, using simplify intermittently can help the equations to be
-# simpler, there are also options for factoring and grouping if you look at the sympy
-# documentation.
+# Lagrangian
 L = simplify(K - P)
+
 display(Math(vlatex(L)))
 # %% RHS
 # Solution for Euler-Lagrange equations, but this does not include right-hand side (like friction and tau)
-EL_case_studyE = simplify(diff(diff(L, qdot), t) - diff(L, q))
+LHS = simplify(L.diff(qdot).diff(t) - L.diff(q))
 
-display(Math(vlatex(EL_case_studyE)))
+display(Math(vlatex(LHS)))
 
 
 # %%
@@ -41,11 +34,6 @@ display(Math(vlatex(EL_case_studyE)))
 ### Including friction and generalized forces, then solving for highest order derivatives
 ############################################################
 
-# these are just convenience variables
-zd = z.diff(t)
-zdd = zd.diff(t)
-thetad = theta.diff(t)
-thetadd = thetad.diff(t)
 
 # defining symbols for external force and friction
 b, F = symbols("b, F")
@@ -53,7 +41,12 @@ tau = sp.Matrix([[0], [F*ell*cos(theta)]])
 friction = sp.Matrix([[0], [0]])
 # defining the right-hand side of the equation and combining it with E-L part
 RHS = tau + friction
-full_eom = EL_case_studyE - RHS
+full_eom = LHS - RHS
+
+zd = z.diff(t)
+zdd = zd.diff(t)
+thetad = theta.diff(t)
+thetadd = thetad.diff(t)
 
 # finding and assigning zdd and thetadd
 # if our eom were more complicated, we could rearrange, solve for the mass matrix, and invert it to move it to the other side and find qdd and thetadd
@@ -72,102 +65,101 @@ display(Math(vlatex(thetadd_eom)))
 #%% E4
 # E4
 
-f_sym = sp.Matrix([zd, thetad, zdd_eom, thetadd_eom])
-state_sym = sp.Matrix([z, theta, zd, thetad])
-input_sym = sp.Matrix([F])
+# f_sym = sp.Matrix([zd, thetad, zdd_eom, thetadd_eom])
+# state_sym = sp.Matrix([z, theta, zd, thetad])
+# input_sym = sp.Matrix([F])
 
-equilibria = equilibria = sp.solve([zdd_eom.subs({zd:0, thetad:0}), 
-                       thetadd_eom.subs({zd:0, thetad:0})], (z, theta, F))
+# equilibria = equilibria = sp.solve([zdd_eom.subs({zd:0, thetad:0}), 
+#                        thetadd_eom.subs({zd:0, thetad:0})], (z, theta, F))
 
-display(Math(vlatex(equilibria)))
+# display(Math(vlatex(equilibria)))
 
 
-A_sym = f_sym.jacobian(state_sym)
-B_sym = f_sym.jacobian(input_sym)
+# A_sym = f_sym.jacobian(state_sym)
+# B_sym = f_sym.jacobian(input_sym)
 
-display(Math(vlatex(A_sym)))
-display(Math(vlatex(B_sym)))
+# display(Math(vlatex(A_sym)))
+# display(Math(vlatex(B_sym)))
 
-v = sp.symbols('v')
-desired_dynamics = sp.Eq(thetadd_eom, v)
+# v = sp.symbols('v')
+# desired_dynamics = sp.Eq(thetadd_eom, v)
 
-fl_control_law = sp.solve(desired_dynamics, F)[0]
+# fl_control_law = sp.solve(desired_dynamics, F)[0]
 
-fl_control_law = simplify(fl_control_law)
+# fl_control_law = simplify(fl_control_law)
 
-display(Math(r"F_{fl} = " + vlatex(fl_control_law)))
+# display(Math(r"F_{fl} = " + vlatex(fl_control_law)))
 
-C_sym = sp.Matrix([
-    [1, 0, 0, 0],
-    [0, 1, 0, 0]
-])
+# C_sym = sp.Matrix([
+#     [1, 0, 0, 0],
+#     [0, 1, 0, 0]
+# ])
 
-D_sym = sp.Matrix([
-    [0],
-    [0]
-])
+# D_sym = sp.Matrix([
+#     [0],
+#     [0]
+# ])
 
-op_point = {z: 0, theta: 0, zd: 0, thetad: 0, F: 0}
+# op_point = {z: 0, theta: 0, zd: 0, thetad: 0, F: 0}
 
-A_lin = A_sym.subs(op_point)
-B_lin = B_sym.subs(op_point)
+# A_lin = A_sym.subs(op_point)
+# B_lin = B_sym.subs(op_point)
 
-params_subs = {
-    m1: PAR.m1,
-    m2: PAR.m2, 
-    ell: PAR.ell,
-    g: PAR.g,
-    b: b
-}
+# params_subs = {
+#     m1: PAR.m1,
+#     m2: PAR.m2, 
+#     ell: PAR.ell,
+#     g: PAR.g,
+#     b: b
+# }
 
-A_num = A_lin.subs(params_subs)
-B_num = B_lin.subs(params_subs)
+# A_num = A_lin.subs(params_subs)
+# B_num = B_lin.subs(params_subs)
 
-C_num = C_sym
-D_num = D_sym
+# C_num = C_sym
+# D_num = D_sym
 
-display(Math("A_{num} = " + vlatex(A_num)))
-display(Math("B_{num} = " + vlatex(B_num)))
-display(Math("C_{num} = " + vlatex(C_num)))
-display(Math("D_{num} = " + vlatex(D_num)))
+# display(Math("A_{num} = " + vlatex(A_num)))
+# display(Math("B_{num} = " + vlatex(B_num)))
+# display(Math("C_{num} = " + vlatex(C_num)))
+# display(Math("D_{num} = " + vlatex(D_num)))
 
-#%% E.5
-print("-" * 50)
-print("Homework E.5: Transfer Functions")
-print("-" * 50)
+# #%% E.5
+# print("-" * 50)
+# print("Homework E.5: Transfer Functions")
+# print("-" * 50)
 
-s = sp.symbols('s')
+# s = sp.symbols('s')
 
-# We use the symbolic linearized matrices (A_lin, B_lin) derived above.
-# These have the equilibrium values (0) substituted, but parameters are still symbols.
+# # We use the symbolic linearized matrices (A_lin, B_lin) derived above.
+# # These have the equilibrium values (0) substituted, but parameters are still symbols.
 
-# Identity Matrix
-I = sp.eye(A_lin.shape[0])
+# # Identity Matrix
+# I = sp.eye(A_lin.shape[0])
 
-# Compute Resolvent Matrix Phi = (sI - A)^-1
-# We use .inv() to invert the matrix symbolically
-Phi = (s * I - A_lin).inv()
+# # Compute Resolvent Matrix Phi = (sI - A)^-1
+# # We use .inv() to invert the matrix symbolically
+# Phi = (s * I - A_lin).inv()
 
-# Transfer Function Formula: H(s) = C * Phi * B + D
-# Result H_matrix will be a vector with 2 rows:
-# Row 0: Transfer function from F -> Z (Position)
-# Row 1: Transfer function from F -> Theta (Angle)
-H_matrix = C_sym * Phi * B_lin + D_sym
+# # Transfer Function Formula: H(s) = C * Phi * B + D
+# # Result H_matrix will be a vector with 2 rows:
+# # Row 0: Transfer function from F -> Z (Position)
+# # Row 1: Transfer function from F -> Theta (Angle)
+# H_matrix = C_sym * Phi * B_lin + D_sym
 
-# Simplify to make the output readable
-H_matrix = sp.simplify(H_matrix)
+# # Simplify to make the output readable
+# H_matrix = sp.simplify(H_matrix)
 
-print("Transfer Function H_z(s) = Z(s) / F(s):")
-display(Math(r"H_z(s) = " + vlatex(H_matrix[0])))
+# print("Transfer Function H_z(s) = Z(s) / F(s):")
+# display(Math(r"H_z(s) = " + vlatex(H_matrix[0])))
 
-print("Transfer Function H_theta(s) = Theta(s) / F(s):")
-display(Math(r"H_\theta(s) = " + vlatex(H_matrix[1])))
+# print("Transfer Function H_theta(s) = Theta(s) / F(s):")
+# display(Math(r"H_\theta(s) = " + vlatex(H_matrix[1])))
 
 # %% [markdown]
 # OK, now we can get the state variable form of the equations of motion.
 
 # %% prints out x_dot
-
 import numpy as np
 
 # defining fixed parameters that are not states or inputs (like g, ell, m, b)

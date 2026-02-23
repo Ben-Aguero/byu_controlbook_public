@@ -4,8 +4,8 @@
 import numpy as np
 
 
-def calculate_eom(x, u, m_c, J_c, m_l, m_r, d, mu, g):
+def calculate_eom(x, u, m_c, m_r, J_c, d, mu):
     [z, h, theta, zdot, hdot, thetadot] = x.flatten()  # ensure 1D
-    [u_F, u_tau] = u.flatten()  # ensure 1D
-    eom = np.array([[zdot], [hdot], [thetadot], [-1.46910863480421e-19*thetadot**2*np.cos(theta) - 0.666666666666667*u_F*np.sin(theta) - 0.0666666666666667*zdot], [-1.46910863480421e-19*thetadot**2*np.sin(theta) + 0.666666666666667*u_F*np.cos(theta) - 9.81], [20.3252032520325*u_tau]])
+    [f_r, f_l] = u.flatten()  # ensure 1D
+    eom = np.array([[zdot], [hdot], [thetadot], [(f_l*np.sin(theta) + f_r*np.sin(theta) - mu*zdot)/(m_c + 2.0*m_r)], [(f_l*np.cos(theta) + f_r*np.cos(theta) - 9.81*m_c - 19.62*m_r)/(m_c + 2.0*m_r)], [d*(-f_l + f_r)/(J_c + 2.0*d**2*m_r)]])
     return eom.squeeze()

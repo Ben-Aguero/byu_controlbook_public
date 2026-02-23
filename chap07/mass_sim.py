@@ -7,7 +7,7 @@ from case_studies import common, D_mass
 
 mass = D_mass.Dynamics()
 controller = D_mass.ControllerPD(use_feedback_linearization=True)
-z_ref = common.SignalGenerator(amplitude=np.radians(30), frequency=0.01)
+z_ref = common.SignalGenerator(amplitude=1.0, frequency=0.05)
 
 time, x_hist, u_hist, r_hist, *_ = common.run_simulation(
     mass,

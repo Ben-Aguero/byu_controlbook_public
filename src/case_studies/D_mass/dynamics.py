@@ -24,7 +24,11 @@ class MassDynamics(DynamicsBase):
         self.k = self.randomize_parameter(P.k, alpha)  # gravity constant is well known, so not randomized
 
     def f(self, x, u):
-       return eom_generated.calculate_eom(x, u, self.m, self.k, self.b)
+       # Add a constant input disturbance (e.g., 0.25 N or whatever D.10 specifies)
+       u_disturbed = u + 0.25 
+       
+       # Pass the disturbed force into the equations of motion
+       return eom_generated.calculate_eom(x, u_disturbed, self.m, self.k, self.b)
 
     def h(self):
         # return the output equations

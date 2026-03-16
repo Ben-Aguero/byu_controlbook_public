@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 try:
-    from .pid_controller import MassControllerPID as ControllerPID
+    from .pid_controller import ControllerPID as ControllerPID
 
     __all__.append("ControllerPID")
 except ImportError:

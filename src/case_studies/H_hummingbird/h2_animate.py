@@ -45,4 +45,4 @@ u_hist = np.array(u_hist)
 
 # visualize generated data
 viz = H_hummingbird.Visualizer(time, x_hist, u_hist)
-viz.animate()  # may need to play with arguments to achieve desired animation speed
+viz.animate()  # may need to play with arguments to achieve desired animation 
